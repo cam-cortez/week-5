@@ -59,11 +59,14 @@ function updateData(){
 	var lng1 = mapBounds["_southWest"]["lng"];
 	var lng2 = mapBounds["_northEast"]["lng"];
 
+	// TEST VARIATIONS OF CELL SIZES TO CHANGE THE RESOLUTION OF THE ANALYSIS OVERLAY
 	var cell_size = 25;
 	var w = window.innerWidth;
 	var h = window.innerHeight;
 
-	request = "/getData?lat1=" + lat1 + "&lat2=" + lat2 + "&lng1=" + lng1 + "&lng2=" + lng2 + "&w=" + w + "&h=" + h + "&cell_size=" + cell_size
+	var checked = document.getElementById("heatmap").checked
+
+	request = "/getData?lat1=" + lat1 + "&lat2=" + lat2 + "&lng1=" + lng1 + "&lng2=" + lng2 + "&w=" + w + "&h=" + h + "&cell_size=" + cell_size + "&analysis=" + checked
 
 	console.log(request);
 
@@ -86,31 +89,38 @@ function updateData(){
 			.on("mouseout", function(){
 				tooltip.style("visibility", "hidden");
 			})
+			// USING .attr("fill", ), ADD A PROPERTY FOR THE CIRCLES TO DEFINE THEIR COLOR BASED ON THE NORMALIZED PRICE
+			// IMPLEMENT THE PRICE NORMALIZATION ON THE SERVER AND SEND WITH THE REST OF THE DATA BACK TO THE CLIENT
+			// REMEMBER TO REMOVE THE FILL STYLING FOR THE CIRCLES FROM THE style.css FILE OR THIS WILL OVERRIDE THE NEW COLOR
 		;
 
 		// call function to update geometry
 		update();
 		map.on("viewreset", update);
 
-		var topleft = projectPoint(lat2, lng1);
+		if (checked == true){
 
-		svg_overlay.attr("width", w)
-			.attr("height", h)
-			.style("left", topleft.x + "px")
-			.style("top", topleft.y + "px");
+			var topleft = projectPoint(lat2, lng1);
 
-		var rectangles = g_overlay.selectAll("rect").data(data.analysis);
-		rectangles.enter().append("rect");
-		// rectangles.exit().remove();
+			svg_overlay.attr("width", w)
+				.attr("height", h)
+				.style("left", topleft.x + "px")
+				.style("top", topleft.y + "px");
 
-		rectangles
-			.attr("x", function(d) { return d.x; })
-			.attr("y", function(d) { return d.y; })
-			.attr("width", function(d) { return d.width; })
-			.attr("height", function(d) { return d.height; })
-	    	.attr("fill-opacity", ".2")
-	    	.attr("fill", function(d) { return "hsl(0, " + Math.floor(d.value*100) + "%, 50%)"; });
+			//create placeholder rect geometry and bind it to data
+			var rectangles = g_overlay.selectAll("rect").data(data.analysis);
+			rectangles.enter().append("rect");
+
+			rectangles
+				.attr("x", function(d) { return d.x; })
+				.attr("y", function(d) { return d.y; })
+				.attr("width", function(d) { return d.width; })
+				.attr("height", function(d) { return d.height; })
+		    	.attr("fill-opacity", ".2")
+		    	.attr("fill", function(d) { return "hsl(" + Math.floor((1-d.value)*250) + ", 100%, 50%)"; });
 		
+		};
+
 		// function to update the data
 		function update() {
 
